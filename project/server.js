@@ -1,53 +1,44 @@
-const express = require('express');
-// const expressStatic = require('express-static');
-const mysql = require('mysql');
-const cookieParser = require('cookie-parser');
-const cookieSession = require('cookie-session');
-const consolidate = require('consolidate');
-// const bodyParser = require('body-parser');
-const multer = require('multer');
-const expressRoute = require('express-route');
+const express=require('express');
+const static=require('express-static');
+const bodyParser=require('body-parser');
+const multer=require('multer');
+const multerObj=multer({dest: './static/upload'});
+const mysql=require('mysql');
+const cookieParser=require('cookie-parser');
+const cookieSession=require('cookie-session');
+const consolidate=require('consolidate');
+const expressRoute=require('express-route');
 
-//mysql连接
-const connection = mysql.createPool({
-  connectionLimit: 10,
-  host: 'localhost',
-  user: 'root',
-  password: '123456',
-  database: 'learn'
-});
-
-const server = express();
+var server=express();
 server.listen(8080);
 
 //1.获取请求数据
-// POST
-server.use(express.urlencoded({extended: false}));
-//文件数据
-server.use(multer({dest: './static/upload'}).any());
-//2.cookie session
+//get自带
+server.use(bodyParser.urlencoded());
+server.use(multerObj.any());
+
+//2.cookie、session
 server.use(cookieParser());
-(function () {
-  const keys = [];
-  for (let i = 0; i < 100000; i++) {
-    keys.push('s_' + Math.random());
+(function (){
+  var keys=[];
+  for(var i=0;i<100000;i++){
+    keys[i]='a_'+Math.random();
   }
   server.use(cookieSession({
     name: 'sess_id',
     keys: keys,
-    maxAge: 20 * 60 * 1000
+    maxAge: 20*60*1000  //20min
   }));
 })();
+
 //3.模板
 server.engine('html', consolidate.ejs);
 server.set('views', 'template');
 server.set('view engine', 'html');
+
 //4.route
+server.use('/', require('./route/web')());
+server.use('/admin/', require('./route/admin')());
 
-
-//5.default static
-server.use(express.static('./static/', {
-  setHeaders: function (res, path, stat) {
-    res.set('x-timestamp', Date.now())
-  }
-}));
+//5.default：static
+server.use(static('./static/'));
